@@ -1,0 +1,9 @@
+.env
+__pycache__/
+**/__pycache__/
+*.pyc
+data/INFLUD25-07-07-2025.csv
+data/srag_parcial.csv
+venv/
+logs/
+logs/*

@@ -1,0 +1,41 @@
+version: 2
+
+sources:
+  - name: srag
+    description: "Dados de SRAG (2019–2025) do OpenDataSUS"
+    tables:
+      - name: dados
+        description: "Casos de SRAG com evolução, UTI e vacinação"
+        config:
+          external_location: "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2025/INFLUD25-26-06-2025.parquet"
+          file_format: parquet
+        columns:
+          - name: DT_NOTIFIC
+            description: "Data da notificação do caso"
+          - name: SG_UF_NOT
+            description: "UF da notificação"
+          - name: CO_MUN_NOT
+            description: "Município da notificação"
+          - name: EVOLUCAO
+            description: "Evolução do caso: 1=Alta, 2=Óbito, 3=Óbito outras causas, 9=Ignorado"
+          - name: UTI
+            description: "Internação em UTI: 1=Sim, 2=Não, 9=Ignorado"
+          - name: VACINA
+            description: "Se recebeu alguma dose de vacina contra COVID/Influenza: 1=Sim, 2=Não, 9=Ignorado"
+          - name: DOSE_1_COV
+            description: "Data da 1ª dose de COVID"
+          - name: DOSE_2_COV
+            description: "Data da 2ª dose de COVID"
+          - name: DOSE_REF
+            description: "Data da dose de reforço"
+
+seeds:
+  - name: populacao
+    description: "População por UF ou município usada para cálculo de taxas"
+    columns:
+      - name: uf
+        description: "Sigla da Unidade Federativa"
+      - name: municipio
+        description: "Código IBGE do município"
+      - name: pop_total
+        description: "População residente"
