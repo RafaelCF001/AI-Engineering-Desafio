@@ -51,13 +51,48 @@ Automatizar a análise de dados e a geração de relatórios técnicos sobre SRA
 
 
 1. **Pré-requisitos**:
-   - Python 3.10+
-   - Instalar dependências: `pip install -r requirements.txt`
-   - Arquivo de dados Parquet em `data/srag_limpo.parquet`
-   - Configurar variáveis de ambiente (ex: chave da OpenAI) em `.env`
+   - Python 3.10.11 (recomendado)
 
-2. **Execução**:
-   - Execute o arquivo principal (`main.py` ou `teste.py`) para iniciar o fluxo.
+2. **Configuração do ambiente e instalação**:
+
+   - Crie um ambiente virtual (venv):
+
+```powershell
+python -m venv venv
+```
+
+   - Ative o ambiente virtual (PowerShell):
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+   - Instale as dependências:
+
+```powershell
+pip install -r requirements.txt
+```
+
+   - Crie um arquivo `.env` na raiz do projeto com as seguintes chaves (exemplo):
+
+```
+OPENAI_API_KEY="<sua_openai_key>"
+TAVILY_API_KEY="<sua_tavily_key>"
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT="https://api.smith.langchain.com"
+LANGSMITH_API_KEY="<sua_langsmith_key>"
+LANGSMITH_PROJECT="<nome_projeto>"
+```
+
+
+3. **Execução**:
+
+   - Com o ambiente virtual ativado e as dependências instaladas, rode o programa:
+
+```powershell
+python main.py
+```
+
    - O sistema irá processar a solicitação do usuário, consultar os dados, gerar gráficos e produzir o relatório final em `relatorio_final.md`.
 
 ## Estrutura dos Principais Arquivos
