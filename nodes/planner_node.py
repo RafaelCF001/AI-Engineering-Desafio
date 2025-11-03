@@ -12,19 +12,27 @@ from models.state import AgentState
 class SragAgent:
     def __init__(self) -> None: 
         self.system_promt = """
-        You are a Severe Acute Respiratory Syndrome specialist. 
-        Your task is to gather information about SARS for a report generation. 
-        Steps: 
-        1 - Use the tool get_srag_key_metrics to gather the data about ocupation rate in ICU, SARS increase rate , population vaccinate rate, and mortality rate. The date should be in the format YYYY-MM-DD.
+       You are a programmatic research agent.
+Your task is to gather information about SARS for a report, following instructions precisely.
 
-        Step 2 - Perform 3 search about SARS in Brazil (SRAG in portuguese) about the current situation, new cases, driving factors, etc... Use the tool search_srag_news
-        - Each search must target one topic per call 
-        - Gather all the rates informations before performing any search.
-        Step 3 - Create a 100 word summary, it should be short and quick
-        Execution rules: 
-        Call
+Steps: 
+1 - Use the tool get_srag_key_metrics to gather the data about ocupation rate in ICU, SARS increase rate , population vaccinate rate, and mortality rate. The date should be in the format YYYY-MM-DD.
+
+2 - Use the tool search_srag_news with the query: "Situação atual do SRAG no Brasil"
+
+3 - Use the tool search_srag_news with the query: "Novos casos de SRAG no Brasil"
+
+4 - Use the tool search_srag_news with the query: "Fatores que influenciam a SRAG no Brasil"
+
+5 - After you have all metrics and the results from all 3 searches, create a 100-word summary of all the information gathered.
+
+Execution rules: 
+- You MUST follow the steps in order, one by one.
+- Do NOT move to the next step until the current one is complete.
+- Do NOT add any conversational text or comments in your responses when you are calling tools. 
+- When you are calling tools, your response must ONLY contain tool calls and an empty "content" field.
         """
-        self.llm = ChatOpenAI(model="gpt-5", temperature=0)
+        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
         self.tools = [get_srag_key_metrics, search_srag_news ]
     
     def execute(self, state: AgentState) -> AgentState:
@@ -43,17 +51,37 @@ class SragAgent:
         )
 
         result = agent.invoke(state)
+        date = None
+        news = []
+        taxa_mortalidade, taxa_crescimento, taxa_ocupacao_uti, taxa_vacinacao = (None,) * 4
 
-        for message in result['messages']:
-            if message.name == 'get_srag_key_metrics':
+        messages = result.get("messages", [])
+
+        for message in messages:
+            
+            if isinstance(message, AIMessage) and message.tool_calls:
+                for tool_call in message.tool_calls:
+                    if tool_call['name'] == 'get_srag_key_metrics' and date is None:
+                        try:
+                            args = tool_call.get('args', {})
+                            if 'date' in args:
+                                date = args['date']
+                                print(f"--- Data extraída do tool call: {date} ---")
+                                break 
+                        except Exception as e:
+                            print(f"Erro ao processar 'date' dos argumentos do tool call: {e}")
+            message_name = getattr(message, 'name', None)
+            
+            if message_name == 'get_srag_key_metrics':
                 taxa_mortalidade, taxa_crescimento, taxa_ocupacao_uti, taxa_vacinacao = self._parse_metrics(message.content)
-            if message.name == 'search_srag_news':
+            
+            elif message_name == 'search_srag_news':
                 news.append(self._parse_news_content(message.content))
 
         noticias = "\n".join(news)
 
-        generate_daily_cases_plot()
-        generate_monthly_cases_plot()
+        generate_daily_cases_plot(date)
+        generate_monthly_cases_plot(date)
         
         commentary = self.create_commentary(
             taxa_mortalidade, taxa_crescimento, taxa_ocupacao_uti, taxa_vacinacao, noticias
@@ -92,8 +120,7 @@ class SragAgent:
         - Taxa de vacinação: {taxa_vacinacao}
         - Notícia relevante: {noticias}
 
-        Gere os comentários em formato estruturado para cada tópico, respeitando o seguinte formato Pydantic:
-        class RelatorioSRAG(BaseModel):
+        Gere os comentários em formato estruturado para cada tópico, respeitando o seguinte formato json:
             comentario_mortalidade: str
             comentario_crescimento: str
             comentario_ocupacao_uti: str

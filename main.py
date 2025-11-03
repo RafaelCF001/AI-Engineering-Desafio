@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 def run_report():
     initial_prompt = (
-        "Analise o SRAG sobre o dia 20/03/2025"
+        "Analise o SRAG sobre o dia 10/10/2025"
         
     )
     app = graph()

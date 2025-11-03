@@ -39,21 +39,24 @@ SELECT * from int_taxas WHERE dt_notific = DATE '{date}';
     metricas['taxa_vacinacao'] = taxa_vacinacao
 
     return {"metricas": metricas}
-def generate_daily_cases_plot() -> str:
+
+def generate_daily_cases_plot(date: str) -> str:
     """
     Gera um gráfico de barras com o número de casos diários de SRAG nos últimos 30 dias.
     Esta ferramenta salva o gráfico como um arquivo PNG e retorna o caminho para o arquivo.
     """
-    query_diario = """
+    query_diario = f"""
     select
-        dt_notific,
-        total_casos
+    dt_notific,
+    total_casos
     from int_taxas
-    where dt_notific >= current_date - interval '30 day'
+    where dt_notific BETWEEN CAST('{date}' AS DATE) - interval '30 day' 
+                    AND CAST('{date}' AS DATE)
     order by dt_notific;
     """
-
+    print(date)
     df_diario = conn.execute(query_diario).df()
+    print(df_diario)
     plt.close('all')
     plt.clf()
     plt.cla()
@@ -100,20 +103,23 @@ def generate_daily_cases_plot() -> str:
     
     return f"Gráfico de casos diários salvo em: graficos/casos_diarios_30d.png"
 
-def generate_monthly_cases_plot() -> str:
+def generate_monthly_cases_plot(date: str) -> str:
     """
     Gera um gráfico de barras com o número de casos mensais de SRAG nos últimos 12 meses.
     Esta ferramenta salva o gráfico como um arquivo PNG e retorna o caminho para o arquivo.
     """
         
-    query_mensal = """
+    query_mensal = f"""
         select
-            date_trunc('month', dt_notific) as mes,
-            sum(total_casos) as casos_mensais
-        from int_taxas
-        where dt_notific >= date_trunc('month', current_date) - interval '12 month'
-        group by 1
-        order by 1;
+        date_trunc('month', dt_notific) as mes,
+        sum(total_casos) as casos_mensais
+    from int_taxas
+    where 
+        dt_notific >= date_trunc('month', CAST('{date}' AS DATE)) - interval '11 month'
+        
+    AND dt_notific < date_trunc('month', CAST('{date}' AS DATE)) + interval '1 month'
+    group by 1
+    order by 1;
     """
 
     df_mensal = conn.execute(query_mensal).df()

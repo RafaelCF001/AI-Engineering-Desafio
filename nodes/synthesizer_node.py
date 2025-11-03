@@ -13,7 +13,7 @@ def synthesizer_node(state: AgentState) -> Dict:
     else:
         user_request = getattr(first_message, "content", "")
 
-    sql_llm = ChatOpenAI(model="gpt-5", temperature=0)
+    sql_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 
 
