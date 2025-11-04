@@ -1,7 +1,9 @@
 from models.models import RelatorioSRAG
 from typing import Dict
 from tools.data_analysis import get_srag_key_metrics, generate_daily_cases_plot, generate_monthly_cases_plot
-from tools.srag_news import search_srag_news
+from tools.srag_news import (
+   search_srag_news
+)
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import AIMessage
@@ -11,29 +13,42 @@ from models.state import AgentState
 
 class SragAgent:
     def __init__(self) -> None: 
-        self.system_promt = """
+        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        self.tools = [
+            get_srag_key_metrics,
+            search_srag_news
+        ]
+        
+        base_prompt = """
        You are a programmatic research agent.
 Your task is to gather information about SARS for a report, following instructions precisely.
 
 Steps: 
 1 - Use the tool get_srag_key_metrics to gather the data about ocupation rate in ICU, SARS increase rate , population vaccinate rate, and mortality rate. The date should be in the format YYYY-MM-DD.
+"""
 
-2 - Use the tool search_srag_news with the query: "Situação atual do SRAG no Brasil"
+        if self.llm.model_name == "gpt-4":
+            search_steps = """
+2 - Use the tool search_srag_news exactly once with the query. Use the date from step 1 to ensure recent results.
+3 - After gathering the metrics and single search result, create a 100-word summary of all information."""
+        else:
+            search_steps = """
+2 - Use the tool search_srag_news three distinct searches about, each must be performd one topic per call :
+2.1 -  current srag situation,
+2.2-  new cases,
+2.3 - influencing factors.
+   Use the date from step 1 to prioritize recent results.
+3 - After gathering the metrics and all three search results, create a 100-word summary of all information."""
 
-3 - Use the tool search_srag_news with the query: "Novos casos de SRAG no Brasil"
-
-4 - Use the tool search_srag_news with the query: "Fatores que influenciam a SRAG no Brasil"
-
-5 - After you have all metrics and the results from all 3 searches, create a 100-word summary of all the information gathered.
+        execution_rules = """
 
 Execution rules: 
 - You MUST follow the steps in order, one by one.
 - Do NOT move to the next step until the current one is complete.
 - Do NOT add any conversational text or comments in your responses when you are calling tools. 
 - When you are calling tools, your response must ONLY contain tool calls and an empty "content" field.
-        """
-        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-        self.tools = [get_srag_key_metrics, search_srag_news ]
+"""
+        self.system_promt = base_prompt + search_steps + execution_rules
     
     def execute(self, state: AgentState) -> AgentState:
         print("--- 🧠 EXECUTANDO O PLANEJADOR ---")
@@ -75,7 +90,7 @@ Execution rules:
             if message_name == 'get_srag_key_metrics':
                 taxa_mortalidade, taxa_crescimento, taxa_ocupacao_uti, taxa_vacinacao = self._parse_metrics(message.content)
             
-            elif message_name == 'search_srag_news':
+            elif message_name in ('search_srag_news_current', 'search_srag_news_new_cases', 'search_srag_news_factors'):
                 news.append(self._parse_news_content(message.content))
 
         noticias = "\n".join(news)

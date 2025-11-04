@@ -22,12 +22,11 @@ def get_srag_key_metrics(date: str) -> dict:
     get_srag_key_metrics_calls += 1
     print(f"get_srag_key_metrics called {get_srag_key_metrics_calls} times.")
     metricas = {}
-    print(date)
+    
     query = f"""
 SELECT * from int_taxas WHERE dt_notific = DATE '{date}';
 """
     df = conn.execute(query).df()
-
     taxa_mortalidade = df['taxa_mortalidade'].values[0]
     taxa_crescimento = df['taxa_crescimento'].values[0]
     taxa_ocupacao_uti = df['taxa_ocupacao_uti'].values[0]
@@ -54,9 +53,7 @@ def generate_daily_cases_plot(date: str) -> str:
                     AND CAST('{date}' AS DATE)
     order by dt_notific;
     """
-    print(date)
     df_diario = conn.execute(query_diario).df()
-    print(df_diario)
     plt.close('all')
     plt.clf()
     plt.cla()
